@@ -1,4 +1,4 @@
-#  🌎 [A simple satellite map](https://satellite-maps.herokuapp.com/) 🌎
+# view a route on a map
 
 ### To run locally:
 
