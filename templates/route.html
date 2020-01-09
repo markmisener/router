@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <meta charset='utf-8' />
+      <title>Route</title>
+      <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+      <link href='https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,700' rel='stylesheet'>
+      <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.6.1/mapbox-gl.js'></script>
+      <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.6.1/mapbox-gl.css' rel='stylesheet' />
+      <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.0.2/mapbox-gl-directions.js'></script>
+      <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.0.2/mapbox-gl-directions.css' type='text/css' />
+      <link href='static/style.css' rel='stylesheet' />
+      <link rel="shortcut icon" href="./static/favicon.ico" type="image/x-icon" />
+      <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js'></script>
+      <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
+  </head>
+  <body>
+    <div id='map' class='map'> </div>
+    <script>
+
+    var mapboxAccessToken = '{{ MAPBOX_ACCESS_TOKEN }}'
+    mapboxgl.accessToken = mapboxAccessToken;
+
+    var map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [0.000000, 0.000000],
+      zoom: 0.0,
+      scrollZoom: true
+    });
+
+    var baseUrl = 'https://api.mapbox.com/directions/v5/mapbox/driving'
+    var origin = '{{ origin }}'
+    var destination = '{{ destination }}'
+    var requestUrl = `${baseUrl}/${origin};${destination}.json?access_token=${mapboxAccessToken}&geometries=geojson&overview=full`
+
+    $.ajax({
+      method: 'GET',
+      url: requestUrl
+    }).done(function(data) {
+      var geometry = data.routes[0].geometry;
+      var centroidObject = turf.centroid(geometry);
+      var centroid = centroidObject.geometry.coordinates
+      addRoute(geometry, centroid);
+    });
+
+    function addRoute(geometry, centroid) {
+      // If a route is already loaded, remove it
+      if (map.getSource('route')) {
+          map.removeLayer('route')
+          map.removeSource('route')
+      } else { // Add a new layer to the map
+          map.addLayer({
+            "id": "route",
+            "type": "line",
+            "source": {
+              "type": "geojson",
+              "data": {
+                "type": "Feature",
+                "properties": {},
+                "geometry": geometry
+              }
+            },
+            "paint": {
+              "line-color": "#03AA46",
+              "line-width": 4,
+              "line-opacity": 0.5
+          }
+        });
+
+        var coordinates = geometry.coordinates;
+        var bounds = coordinates.reduce(function(bounds, coord) {
+          return bounds.extend(coord);
+        }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+
+        map.fitBounds(bounds, {
+          padding: 20
+        });
+      };
+    }
+
+    </script>
+  </body>
+</html>
